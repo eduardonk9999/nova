@@ -37,6 +37,19 @@ class MacOSController:
         self._applescript(f"set volume output volume {value}")
         return f"Volume ajustado para {value} por cento."
 
+    def set_muted(self, muted: bool) -> str:
+        self._applescript(f"set volume output muted {str(muted).lower()}")
+        return "Som desativado." if muted else "Som ativado."
+
+    def screenshot(self) -> str:
+        destination = Path.home() / "Desktop" / "NOVA-captura.png"
+        result = subprocess.run(
+            ["screencapture", "-x", str(destination)], capture_output=True, text=True, timeout=10
+        )
+        if result.returncode != 0:
+            raise RuntimeError("Não consegui capturar a tela.")
+        return "Captura de tela salva na Mesa."
+
     def open_claude_code(self, project_path: Path) -> str:
         script = """on run argv
 set projectPath to item 1 of argv
@@ -66,6 +79,21 @@ end tell
 end run"""
         self._applescript(script, str(working_directory), command)
         return f"Executando no Terminal: {command}."
+
+    def send_to_app(self, spoken_app: str, prompt: str) -> str:
+        app = self.app_name(spoken_app)
+        script = """on run argv
+set appName to item 1 of argv
+set promptText to item 2 of argv
+tell application appName to activate
+delay 0.5
+tell application "System Events"
+    keystroke promptText
+    key code 36
+end tell
+end run"""
+        self._applescript(script, app, prompt)
+        return f"Enviei a solicitação para {app}."
 
     @staticmethod
     def _applescript(script: str, *args: str) -> None:

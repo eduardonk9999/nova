@@ -1,8 +1,11 @@
 {
+  "search_roots": [
+    "/Users/eduardosilva/Documents"
+  ],
   "projects": {
     "nova": {
       "path": "/Users/eduardosilva/Documents/NOVA",
-      "command": ".venv/bin/pytest -q"
+      "command": "code ."
     }
   }
 }

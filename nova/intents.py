@@ -14,6 +14,10 @@ class Action(str, Enum):
     SEARCH_WEB = "search_web"
     START_PROJECT = "start_project"
     RUN_TERMINAL = "run_terminal"
+    SEND_TO_APP = "send_to_app"
+    MUTE = "mute"
+    UNMUTE = "unmute"
+    SCREENSHOT = "screenshot"
     CONFIRM = "confirm"
     CANCEL = "cancel"
     SET_VOLUME = "set_volume"
@@ -54,10 +58,27 @@ def parse(text: str, wake_word: str = "nova") -> Intent:
         return Intent(Action.HELP)
     if command in {"que horas sao", "horas", "me diga as horas"}:
         return Intent(Action.TIME)
+    if command in {"silencio", "mudo", "ative o mudo", "tire o som"}:
+        return Intent(Action.MUTE)
+    if command in {"ative o som", "remova o mudo", "volte o som"}:
+        return Intent(Action.UNMUTE)
+    if command in {"tire uma captura de tela", "tire um print", "captura de tela"}:
+        return Intent(Action.SCREENSHOT)
+
+    match = re.fullmatch(
+        r"(?:envie|enviar|mande|mandar|pergunte|perguntar) (?:para|ao|a)(?: o)? (codex|codax|codigo x|claude|claudio) (.+)",
+        command,
+    )
+    if match:
+        spoken_app = match.group(1)
+        app = "codex" if spoken_app in {"codex", "codax", "codigo x"} else "claude"
+        return Intent(Action.SEND_TO_APP, target=f"{app}\n{match.group(2)}")
 
     # Modelos offline em português costumam aproximar o nome estrangeiro
     # "Claude Code" para "Cláudio Code/Coutinho". Aceitamos essas formas.
-    claude_names = ("claude", "claudio", "claudio code", "claudio coutinho")
+    claude_names = (
+        "claude code", "claudio", "claudio code", "claudio coutinho", "claudio couto"
+    )
     open_words = ("abra", "abrir", "obra", "inicie", "iniciar")
     if any(word in command.split() for word in open_words) and any(
         name in command for name in claude_names

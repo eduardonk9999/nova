@@ -30,8 +30,9 @@ def main() -> None:
     )
     projects_file = ROOT / "config" / "projects.json"
     if projects_file.exists():
+        project_config = json.loads(projects_file.read_text(encoding="utf-8"))
         assistant.set_projects(
-            json.loads(projects_file.read_text(encoding="utf-8"))["projects"]
+            project_config["projects"], project_config.get("search_roots")
         )
 
     listener = None

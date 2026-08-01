@@ -5,6 +5,7 @@ from pathlib import Path
 
 from nova.intents import Action, parse
 from nova.macos import MacOSController
+from nova.projects import ProjectRegistry
 from nova.speech import Speaker
 from nova.terminal import TerminalPolicy
 
@@ -12,7 +13,8 @@ from nova.terminal import TerminalPolicy
 HELP = (
     "Você pode dizer: abra o Safari, feche o Spotify, mostre o Finder, "
     "abra o Claude Code, pesquise na internet, inicie o projeto NOVA, "
-    "execute no terminal git status, volume 40, ou sair."
+    "execute no terminal git status, pergunte ao Codex, tire um print, "
+    "volume 40, ou sair."
 )
 
 
@@ -24,10 +26,14 @@ class NovaAssistant:
         self.speaker = speaker
         self.project_path = project_path or Path.cwd()
         self.projects: dict[str, dict[str, str]] = {}
+        self.project_registry = ProjectRegistry({})
         self.pending_command: str | None = None
 
-    def set_projects(self, projects: dict[str, dict[str, str]]) -> None:
+    def set_projects(
+        self, projects: dict[str, dict[str, str]], roots: list[str] | None = None
+    ) -> None:
         self.projects = projects
+        self.project_registry = ProjectRegistry(projects, roots)
 
     def handle(self, command: str) -> bool:
         intent = parse(command)
@@ -42,6 +48,15 @@ class NovaAssistant:
                 response = self._start_project(intent.target or "")
             elif intent.action is Action.RUN_TERMINAL:
                 response = self._terminal_command(intent.target or "")
+            elif intent.action is Action.SEND_TO_APP:
+                app, prompt = (intent.target or "\n").split("\n", 1)
+                response = self.controller.send_to_app(app, prompt)
+            elif intent.action is Action.MUTE:
+                response = self.controller.set_muted(True)
+            elif intent.action is Action.UNMUTE:
+                response = self.controller.set_muted(False)
+            elif intent.action is Action.SCREENSHOT:
+                response = self.controller.screenshot()
             elif intent.action is Action.CONFIRM:
                 response = self._confirm_terminal()
             elif intent.action is Action.CANCEL:
@@ -68,11 +83,11 @@ class NovaAssistant:
         return True
 
     def _start_project(self, name: str) -> str:
-        project = self.projects.get(name)
+        project = self.project_registry.find(name)
         if not project:
             return f"O projeto {name} ainda não está cadastrado."
         return self.controller.run_in_terminal(
-            project["command"], Path(project["path"]).expanduser()
+            project.command, project.path
         )
 
     def _terminal_command(self, command: str) -> str:
