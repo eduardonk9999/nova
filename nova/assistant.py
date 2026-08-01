@@ -42,6 +42,8 @@ class NovaAssistant:
                 response = self.controller.open_app(intent.target or "")
             elif intent.action is Action.OPEN_CLAUDE_CODE:
                 response = self.controller.open_claude_code(self.project_path)
+            elif intent.action is Action.OPEN_PROJECT_CLAUDE_CODE:
+                response = self._open_project_in_claude_code(intent.target or "")
             elif intent.action is Action.SEARCH_WEB:
                 response = self.controller.search_web(intent.target or "")
             elif intent.action is Action.START_PROJECT:
@@ -89,6 +91,12 @@ class NovaAssistant:
         return self.controller.run_in_terminal(
             project.command, project.path
         )
+
+    def _open_project_in_claude_code(self, name: str) -> str:
+        project = self.project_registry.find(name)
+        if not project:
+            return f"O projeto {name} ainda não foi encontrado."
+        return self.controller.open_claude_code(project.path)
 
     def _terminal_command(self, command: str) -> str:
         classification = TerminalPolicy.classify(command)

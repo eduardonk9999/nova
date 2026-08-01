@@ -33,6 +33,18 @@ def test_open_claude_desktop_app() -> None:
     assert intent.target == "claude"
 
 
+def test_open_claude_desktop_app_with_explicit_wording() -> None:
+    intent = parse("NOVA, abra o aplicativo Cláudio")
+    assert intent.action is Action.OPEN_APP
+    assert intent.target == "claude"
+
+
+def test_open_project_in_claude_code() -> None:
+    intent = parse("abra o projeto NOVA no Claude Code")
+    assert intent.action is Action.OPEN_PROJECT_CLAUDE_CODE
+    assert intent.target == "nova"
+
+
 def test_open_claude_code_with_offline_transcription() -> None:
     assert parse("nova a obra claudio coutinho").action is Action.OPEN_CLAUDE_CODE
 

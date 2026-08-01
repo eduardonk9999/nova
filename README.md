@@ -9,6 +9,7 @@ nenhum áudio precisa ser enviado para a nuvem.
 - abre, fecha e traz aplicativos para frente;
 - ajusta o volume do macOS;
 - abre o Claude Code no Terminal dentro da pasta do projeto;
+- abre o Claude Desktop e abre projetos descobertos diretamente no Claude Code;
 - abre e controla aplicativos como Codex e Claude;
 - pesquisa na internet usando o navegador padrão;
 - inicia projetos cadastrados em `config/projects.json`;

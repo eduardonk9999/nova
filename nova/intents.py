@@ -11,6 +11,7 @@ class Action(str, Enum):
     CLOSE_APP = "close_app"
     FOCUS_APP = "focus_app"
     OPEN_CLAUDE_CODE = "open_claude_code"
+    OPEN_PROJECT_CLAUDE_CODE = "open_project_claude_code"
     SEARCH_WEB = "search_web"
     START_PROJECT = "start_project"
     RUN_TERMINAL = "run_terminal"
@@ -64,6 +65,20 @@ def parse(text: str, wake_word: str = "nova") -> Intent:
         return Intent(Action.UNMUTE)
     if command in {"tire uma captura de tela", "tire um print", "captura de tela"}:
         return Intent(Action.SCREENSHOT)
+
+    match = re.fullmatch(
+        r"(?:abra|abrir|inicie|iniciar) (?:o )?projeto (.+?) (?:no|com o) (?:claude|claudio) code",
+        command,
+    )
+    if match:
+        return Intent(Action.OPEN_PROJECT_CLAUDE_CODE, target=match.group(1))
+
+    match = re.fullmatch(
+        r"(?:abra|abrir|mostre|mostrar) (?:o )?(?:aplicativo|app) (?:claude|claudio)",
+        command,
+    )
+    if match:
+        return Intent(Action.OPEN_APP, target="claude")
 
     match = re.fullmatch(
         r"(?:envie|enviar|mande|mandar|pergunte|perguntar) (?:para|ao|a)(?: o)? (codex|codax|codigo x|claude|claudio) (.+)",
