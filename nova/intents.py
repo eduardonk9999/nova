@@ -75,7 +75,7 @@ def parse(text: str, wake_word: str = "nova") -> Intent:
         return Intent(Action.SCREENSHOT)
 
     match = re.fullmatch(
-        r"(?:pesquise|pesquisar|busque|buscar|procure|procurar) (?:no|usando o) (codex|codax|codigo x)(?: por| sobre)? (.+)",
+        r"(?:no|usando o) (codex|codax|codigo x) (?:pesquise|pesquisa|pesquisar|busque|buscar|procure|procurar)(?: por| sobre)? (.+)",
         command,
     )
     if match:
@@ -84,7 +84,16 @@ def parse(text: str, wake_word: str = "nova") -> Intent:
         return Intent(Action.SEND_TO_APP, target=f"codex\n{research_prompt}")
 
     match = re.fullmatch(
-        r"(?:pesquise|pesquisar|busque|buscar|procure|procurar) (.+?) (?:no|usando o) (codex|codax|codigo x)",
+        r"(?:pesquise|pesquisa|pesquisar|busque|buscar|procure|procurar) (?:no|usando o) (codex|codax|codigo x)(?: por| sobre)? (.+)",
+        command,
+    )
+    if match:
+        topic = normalize_research_topic(match.group(2))
+        research_prompt = f"Pesquise na internet sobre {topic} e apresente um resumo com as fontes."
+        return Intent(Action.SEND_TO_APP, target=f"codex\n{research_prompt}")
+
+    match = re.fullmatch(
+        r"(?:pesquise|pesquisa|pesquisar|busque|buscar|procure|procurar) (.+?) (?:no|usando o) (codex|codax|codigo x)",
         command,
     )
     if match:
@@ -136,7 +145,7 @@ def parse(text: str, wake_word: str = "nova") -> Intent:
         return Intent(Action.OPEN_CLAUDE_CODE)
 
     match = re.fullmatch(
-        r"(?:pesquise|pesquisar|busque|buscar|procure|procurar)(?: na internet| no google)? (.+)",
+        r"(?:pesquise|pesquisa|pesquisar|busque|buscar|procure|procurar)(?: na internet| no google)?(?: por| sobre)? (.+)",
         command,
     )
     if match:

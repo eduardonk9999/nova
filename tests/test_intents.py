@@ -113,6 +113,21 @@ def test_research_codex_before_topic() -> None:
     )
 
 
+def test_research_with_codex_destination_first() -> None:
+    intent = parse("NOVA, no Codex, busque sobre dispositivos de restaurante")
+    assert intent.action is Action.SEND_TO_APP
+    assert intent.target == (
+        "codex\nPesquise na internet sobre dispositivos de restaurante "
+        "e apresente um resumo com as fontes."
+    )
+
+
+def test_research_with_indicative_transcription() -> None:
+    intent = parse("NOVA, pesquisa sobre dispositivos de restaurante")
+    assert intent.action is Action.SEARCH_WEB
+    assert intent.target == "dispositivos de restaurante"
+
+
 def test_research_h20_spoken_form() -> None:
     intent = parse("pesquise agá vinte no código X")
     assert intent.action is Action.SEND_TO_APP
