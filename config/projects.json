@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "nova": {
+      "path": "/Users/eduardosilva/Documents/NOVA",
+      "command": ".venv/bin/pytest -q"
+    }
+  }
+}

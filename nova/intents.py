@@ -1,0 +1,102 @@
+from __future__ import annotations
+
+import re
+import unicodedata
+from dataclasses import dataclass
+from enum import Enum
+
+
+class Action(str, Enum):
+    OPEN_APP = "open_app"
+    CLOSE_APP = "close_app"
+    FOCUS_APP = "focus_app"
+    OPEN_CLAUDE_CODE = "open_claude_code"
+    SEARCH_WEB = "search_web"
+    START_PROJECT = "start_project"
+    RUN_TERMINAL = "run_terminal"
+    CONFIRM = "confirm"
+    CANCEL = "cancel"
+    SET_VOLUME = "set_volume"
+    TIME = "time"
+    HELP = "help"
+    EXIT = "exit"
+    UNKNOWN = "unknown"
+
+
+@dataclass(frozen=True)
+class Intent:
+    action: Action
+    target: str | None = None
+    value: int | None = None
+
+
+def normalize(text: str) -> str:
+    text = unicodedata.normalize("NFKD", text.lower())
+    text = "".join(char for char in text if not unicodedata.combining(char))
+    text = re.sub(r"[,.!?;:]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def parse(text: str, wake_word: str = "nova") -> Intent:
+    command = normalize(text)
+    if command.startswith(f"{wake_word} "):
+        command = command[len(wake_word) + 1 :].strip()
+    elif command == wake_word:
+        return Intent(Action.HELP)
+
+    if command in {"sair", "encerrar", "desligar", "tchau"}:
+        return Intent(Action.EXIT)
+    if command in {"confirmar", "confirmo", "pode executar", "sim execute"}:
+        return Intent(Action.CONFIRM)
+    if command in {"cancelar", "cancele", "nao execute"}:
+        return Intent(Action.CANCEL)
+    if command in {"ajuda", "o que voce faz", "comandos"}:
+        return Intent(Action.HELP)
+    if command in {"que horas sao", "horas", "me diga as horas"}:
+        return Intent(Action.TIME)
+
+    # Modelos offline em português costumam aproximar o nome estrangeiro
+    # "Claude Code" para "Cláudio Code/Coutinho". Aceitamos essas formas.
+    claude_names = ("claude", "claudio", "claudio code", "claudio coutinho")
+    open_words = ("abra", "abrir", "obra", "inicie", "iniciar")
+    if any(word in command.split() for word in open_words) and any(
+        name in command for name in claude_names
+    ):
+        return Intent(Action.OPEN_CLAUDE_CODE)
+
+    match = re.fullmatch(
+        r"(?:pesquise|pesquisar|busque|buscar|procure|procurar)(?: na internet| no google)? (.+)",
+        command,
+    )
+    if match:
+        return Intent(Action.SEARCH_WEB, target=match.group(1))
+
+    match = re.fullmatch(
+        r"(?:inicie|iniciar|suba|subir|starte|startar|rode) (?:o )?projeto (.+)", command
+    )
+    if match:
+        return Intent(Action.START_PROJECT, target=match.group(1))
+
+    match = re.fullmatch(
+        r"(?:execute|executar|rode|rodar)(?: no terminal)? (?:o comando )?(.+)", command
+    )
+    if match:
+        return Intent(Action.RUN_TERMINAL, target=match.group(1))
+
+    match = re.fullmatch(r"(?:abra|abrir|inicie|iniciar) (?:o |a )?(.+)", command)
+    if match:
+        return Intent(Action.OPEN_APP, target=match.group(1))
+
+    match = re.fullmatch(r"(?:feche|fechar|encerre) (?:o |a )?(.+)", command)
+    if match:
+        return Intent(Action.CLOSE_APP, target=match.group(1))
+
+    match = re.fullmatch(r"(?:foque|mostrar|mostre|va para) (?:o |a )?(.+)", command)
+    if match:
+        return Intent(Action.FOCUS_APP, target=match.group(1))
+
+    match = re.fullmatch(r"(?:volume|defina o volume(?: para)?|coloque o volume(?: em)?) (\d{1,3})", command)
+    if match:
+        return Intent(Action.SET_VOLUME, value=min(100, int(match.group(1))))
+
+    return Intent(Action.UNKNOWN)

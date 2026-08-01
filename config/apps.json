@@ -1,0 +1,18 @@
+{
+  "aliases": {
+    "calculadora": "Calculator",
+    "calendario": "Calendar",
+    "chrome": "Google Chrome",
+    "claude": "Claude",
+    "codex": "Codex",
+    "configuracoes": "System Settings",
+    "discord": "Discord",
+    "finder": "Finder",
+    "notas": "Notes",
+    "safari": "Safari",
+    "spotify": "Spotify",
+    "terminal": "Terminal",
+    "visual studio code": "Visual Studio Code",
+    "vscode": "Visual Studio Code"
+  }
+}
