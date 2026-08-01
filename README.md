@@ -56,6 +56,13 @@ O Vosk antigo continua disponível como fallback com `nova --voice --engine vosk
 
 Para encerrar imediatamente sem resposta falada, diga `NOVA, stop` ou `NOVA, parar`.
 
+No modo de voz, todos os demais comandos precisam começar com `NOVA`. Conversas
+ambientes sem a palavra de ativação são transcritas localmente e ignoradas. A fala
+é executada de forma assíncrona, permitindo que `NOVA, stop` interrompa a resposta.
+
+Nome, palavra de ativação, voz feminina e sensibilidade do microfone ficam em
+`config/settings.json`, sem necessidade de alterar o código Python.
+
 Na primeira execução, o macOS pedirá acesso ao microfone. Para controlar outros
 aplicativos, talvez também peça autorização em **Ajustes do Sistema → Privacidade e
 Segurança → Automação**.

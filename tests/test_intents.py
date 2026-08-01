@@ -1,4 +1,4 @@
-from nova.intents import Action, parse
+from nova.intents import Action, contains_stop_command, has_wake_word, parse
 
 
 def test_open_app_with_wake_word() -> None:
@@ -29,6 +29,29 @@ def test_nova_stop_is_silent_stop() -> None:
 
 def test_nova_stop_in_english_is_silent_stop() -> None:
     assert parse("NOVA, stop").action is Action.STOP_SILENT
+
+
+def test_wake_word_must_be_at_start() -> None:
+    assert has_wake_word("NOVA, abra o Safari")
+    assert not has_wake_word("conversando sobre a nova versão")
+
+
+def test_wake_word_alone_is_not_full_help() -> None:
+    assert parse("NOVA").action is Action.WAKE
+
+
+def test_natural_acknowledgement() -> None:
+    assert parse("NOVA, beleza").action is Action.THANKS
+
+
+def test_spoken_volume_number() -> None:
+    intent = parse("NOVA, volume dez")
+    assert intent.action is Action.SET_VOLUME
+    assert intent.value == 10
+
+
+def test_stop_is_detected_inside_captured_speech() -> None:
+    assert contains_stop_command("Esta é uma resposta longa. NOVA, stop")
 
 
 def test_open_claude_code() -> None:

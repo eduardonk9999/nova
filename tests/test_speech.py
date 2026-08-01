@@ -18,3 +18,9 @@ def test_whisper_rms_detects_silence() -> None:
 def test_whisper_rms_detects_speech() -> None:
     samples = array("h", [1000, -1000] * 800)
     assert WhisperListener._rms(samples.tobytes()) == 1000
+
+
+def test_feminine_voice_is_default() -> None:
+    from nova.speech import Speaker
+
+    assert Speaker(enabled=False).voice == "Luciana"

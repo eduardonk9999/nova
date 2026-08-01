@@ -12,19 +12,47 @@ from pathlib import Path
 
 
 class Speaker:
-    def __init__(self, enabled: bool = True) -> None:
+    def __init__(
+        self, enabled: bool = True, blocking: bool = True, voice: str = "Luciana"
+    ) -> None:
         self.enabled = enabled
+        self.blocking = blocking
+        self.voice = voice
+        self._process: subprocess.Popen | None = None
 
-    def say(self, message: str) -> None:
+    def say(self, message: str, wait: bool | None = None) -> None:
         print(f"NOVA: {message}")
-        if self.enabled:
-            # Uma ação anterior pode ter colocado a saída em mudo. A assistente
-            # precisa permanecer audível para confirmar comandos ao usuário.
-            subprocess.run(
-                ["osascript", "-e", "set volume output muted false"],
-                check=False, capture_output=True,
-            )
-            subprocess.run(["say", "-v", "Luciana", message], check=False)
+        if not self.enabled:
+            return
+        self.stop()
+        # Uma ação anterior pode ter colocado a saída em mudo. A assistente
+        # precisa permanecer audível para confirmar comandos ao usuário.
+        subprocess.run(
+            ["osascript", "-e", "set volume output muted false"],
+            check=False, capture_output=True,
+        )
+        self._process = subprocess.Popen(
+            ["say", "-v", self.voice, message],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        should_wait = self.blocking if wait is None else wait
+        if should_wait:
+            self._process.wait()
+            self._process = None
+
+    @property
+    def is_speaking(self) -> bool:
+        return self._process is not None and self._process.poll() is None
+
+    def stop(self) -> None:
+        if self._process is not None and self._process.poll() is None:
+            self._process.terminate()
+            try:
+                self._process.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                self._process.kill()
+        self._process = None
 
 
 class VoskListener:
@@ -96,6 +124,7 @@ class WhisperListener:
         sample_rate: int = 16_000,
         silence_seconds: float = 1.2,
         speech_threshold: int = 350,
+        language: str = "pt",
     ) -> None:
         try:
             import sounddevice as sd
@@ -111,6 +140,7 @@ class WhisperListener:
         self.sample_rate = sample_rate
         self.silence_seconds = silence_seconds
         self.speech_threshold = speech_threshold
+        self.language = language
         self.audio: queue.Queue[bytes] = queue.Queue()
 
     def listen(self) -> str:
@@ -164,7 +194,7 @@ class WhisperListener:
                     self.executable,
                     "-m", str(self.model_path),
                     "-f", str(temporary_path),
-                    "-l", "pt",
+                    "-l", self.language,
                     "-nt", "-np", "-t", "6",
                     "--prompt", self.PROMPT,
                 ],

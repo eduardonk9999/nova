@@ -29,8 +29,13 @@ def arguments() -> argparse.Namespace:
 def main() -> None:
     args = arguments()
     config = json.loads((ROOT / "config" / "apps.json").read_text(encoding="utf-8"))
+    settings = json.loads((ROOT / "config" / "settings.json").read_text(encoding="utf-8"))
+    speaker = Speaker(
+        not args.silent, blocking=not args.voice, voice=settings.get("voice", "Luciana")
+    )
     assistant = NovaAssistant(
-        MacOSController(config["aliases"]), Speaker(not args.silent), ROOT
+        MacOSController(config["aliases"]), speaker, ROOT,
+        wake_word=settings.get("wake_word", "nova"),
     )
     projects_file = ROOT / "config" / "projects.json"
     if projects_file.exists():
@@ -44,24 +49,34 @@ def main() -> None:
         try:
             if args.engine == "whisper":
                 model = args.model or ROOT / "models" / "whisper" / "ggml-small.bin"
-                listener = WhisperListener(model)
+                whisper_settings = settings.get("whisper", {})
+                listener = WhisperListener(
+                    model,
+                    silence_seconds=whisper_settings.get("silence_seconds", 1.2),
+                    speech_threshold=whisper_settings.get("speech_threshold", 350),
+                    language=whisper_settings.get("language", "pt"),
+                )
             else:
                 model = args.model or ROOT / "models" / "vosk-pt"
                 listener = VoskListener(model)
         except RuntimeError as exc:
             print(f"Voz indisponível: {exc}\nUsando modo texto.")
 
-    assistant.speaker.say("NOVA iniciada. Como posso ajudar?")
+    # Evita que a apresentação, que contém a wake word, seja capturada como comando.
+    assistant.speaker.say("NOVA iniciada. Como posso ajudar?", wait=True)
     running = True
     while running:
         try:
             command = listener.listen() if listener else input("Você: ").strip()
             if command:
                 print(f"Você: {command}" if listener else "", end="\n" if listener else "")
-                running = assistant.handle(command)
+                require_wake_word = listener is not None and settings.get(
+                    "require_wake_word", True
+                )
+                running = assistant.handle(command, require_wake_word=require_wake_word)
         except (EOFError, KeyboardInterrupt):
             print()
-            assistant.speaker.say("Até logo.")
+            assistant.speaker.stop()
             break
 
 

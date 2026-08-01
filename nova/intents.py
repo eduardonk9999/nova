@@ -25,6 +25,10 @@ class Action(str, Enum):
     SET_VOLUME = "set_volume"
     TIME = "time"
     HELP = "help"
+    WAKE = "wake"
+    GREETING = "greeting"
+    THANKS = "thanks"
+    STATUS = "status"
     EXIT = "exit"
     STOP_SILENT = "stop_silent"
     UNKNOWN = "unknown"
@@ -51,12 +55,23 @@ def normalize_research_topic(topic: str) -> str:
     return topic
 
 
+def has_wake_word(text: str, wake_word: str = "nova") -> bool:
+    command = normalize(text)
+    return command == wake_word or command.startswith(f"{wake_word} ")
+
+
+def contains_stop_command(text: str, wake_word: str = "nova") -> bool:
+    """Detecta a interrupção mesmo quando misturada à fala da própria NOVA."""
+    command = normalize(text)
+    return bool(re.search(rf"\b{re.escape(wake_word)}\s+(?:stop|pare|parar)\b", command))
+
+
 def parse(text: str, wake_word: str = "nova") -> Intent:
     command = normalize(text)
     if command.startswith(f"{wake_word} "):
         command = command[len(wake_word) + 1 :].strip()
     elif command == wake_word:
-        return Intent(Action.HELP)
+        return Intent(Action.WAKE)
 
     if command in {"stop", "parar", "pare", "parar de falar", "fique quieta"}:
         return Intent(Action.STOP_SILENT)
@@ -68,6 +83,12 @@ def parse(text: str, wake_word: str = "nova") -> Intent:
         return Intent(Action.CANCEL)
     if command in {"ajuda", "o que voce faz", "comandos"}:
         return Intent(Action.HELP)
+    if command in {"oi", "ola", "bom dia", "boa tarde", "boa noite", "e ai"}:
+        return Intent(Action.GREETING)
+    if command in {"obrigado", "obrigada", "valeu", "beleza"}:
+        return Intent(Action.THANKS)
+    if command in {"voce esta ai", "esta ouvindo", "tudo certo"}:
+        return Intent(Action.STATUS)
     if command in {"que horas sao", "horas", "me diga as horas"}:
         return Intent(Action.TIME)
     if command in {"silencio", "mudo", "ative o mudo", "tire o som"}:
@@ -181,5 +202,16 @@ def parse(text: str, wake_word: str = "nova") -> Intent:
     match = re.fullmatch(r"(?:volume|defina o volume(?: para)?|coloque o volume(?: em)?) (\d{1,3})", command)
     if match:
         return Intent(Action.SET_VOLUME, value=min(100, int(match.group(1))))
+
+    number_words = {
+        "zero": 0, "dez": 10, "vinte": 20, "trinta": 30, "quarenta": 40,
+        "cinquenta": 50, "sessenta": 60, "setenta": 70, "oitenta": 80,
+        "noventa": 90, "cem": 100,
+    }
+    match = re.fullmatch(
+        r"(?:volume|defina o volume(?: para)?|coloque o volume(?: em)?) (\w+)", command
+    )
+    if match and match.group(1) in number_words:
+        return Intent(Action.SET_VOLUME, value=number_words[match.group(1)])
 
     return Intent(Action.UNKNOWN)
