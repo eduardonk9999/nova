@@ -34,7 +34,7 @@ class MacOSController:
         return f"Mostrando {app}."
 
     def set_volume(self, value: int) -> str:
-        self._applescript(f"set volume output volume {value}")
+        self._applescript(f"set volume output muted false\nset volume output volume {value}")
         return f"Volume ajustado para {value} por cento."
 
     def set_muted(self, muted: bool) -> str:

@@ -18,6 +18,12 @@ class Speaker:
     def say(self, message: str) -> None:
         print(f"NOVA: {message}")
         if self.enabled:
+            # Uma ação anterior pode ter colocado a saída em mudo. A assistente
+            # precisa permanecer audível para confirmar comandos ao usuário.
+            subprocess.run(
+                ["osascript", "-e", "set volume output muted false"],
+                check=False, capture_output=True,
+            )
             subprocess.run(["say", "-v", "Luciana", message], check=False)
 
 
