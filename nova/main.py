@@ -6,7 +6,7 @@ from pathlib import Path
 
 from nova.assistant import NovaAssistant
 from nova.macos import MacOSController
-from nova.speech import Speaker, VoskListener
+from nova.speech import Speaker, VoskListener, WhisperListener
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -14,10 +14,14 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="NOVA, sua assistente local")
-    parser.add_argument("--voice", action="store_true", help="usar microfone com Vosk")
+    parser.add_argument("--voice", action="store_true", help="usar o microfone")
+    parser.add_argument(
+        "--engine", choices=("whisper", "vosk"), default="whisper",
+        help="motor local de reconhecimento (padrão: whisper)",
+    )
     parser.add_argument("--silent", action="store_true", help="não responder em voz alta")
     parser.add_argument(
-        "--model", type=Path, default=ROOT / "models" / "vosk-pt", help="modelo Vosk"
+        "--model", type=Path, default=None, help="caminho alternativo do modelo de voz"
     )
     return parser.parse_args()
 
@@ -38,7 +42,12 @@ def main() -> None:
     listener = None
     if args.voice:
         try:
-            listener = VoskListener(args.model)
+            if args.engine == "whisper":
+                model = args.model or ROOT / "models" / "whisper" / "ggml-small.bin"
+                listener = WhisperListener(model)
+            else:
+                model = args.model or ROOT / "models" / "vosk-pt"
+                listener = VoskListener(model)
         except RuntimeError as exc:
             print(f"Voz indisponível: {exc}\nUsando modo texto.")
 

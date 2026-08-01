@@ -4,6 +4,10 @@ import json
 import queue
 import re
 import subprocess
+import tempfile
+import wave
+from array import array
+from collections import deque
 from pathlib import Path
 
 
@@ -69,3 +73,109 @@ class VoskListener:
         is_research = any(word in normalized for word in ("pesquise", "busque", "procure"))
         mentions_codex = any(word in normalized for word in ("codex", "codax", "códex"))
         return is_research and mentions_codex and bool(re.search(r"\bh$", normalized))
+
+
+class WhisperListener:
+    """Captura uma frase e usa whisper.cpp local para transcrevê-la."""
+
+    PROMPT = (
+        "NOVA, Codex, Claude, Claude Code, H2O, H20, GitHub, Python, terminal, "
+        "projeto, pesquisar, aplicativo"
+    )
+
+    def __init__(
+        self,
+        model_path: Path,
+        executable: str = "/opt/homebrew/bin/whisper-cli",
+        sample_rate: int = 16_000,
+        silence_seconds: float = 1.2,
+        speech_threshold: int = 350,
+    ) -> None:
+        try:
+            import sounddevice as sd
+        except ImportError as exc:
+            raise RuntimeError("Dependência sounddevice ausente.") from exc
+        if not model_path.exists():
+            raise RuntimeError(f"Modelo Whisper não encontrado em {model_path}")
+        if not Path(executable).exists():
+            raise RuntimeError(f"whisper-cli não encontrado em {executable}")
+        self.sd = sd
+        self.model_path = model_path
+        self.executable = executable
+        self.sample_rate = sample_rate
+        self.silence_seconds = silence_seconds
+        self.speech_threshold = speech_threshold
+        self.audio: queue.Queue[bytes] = queue.Queue()
+
+    def listen(self) -> str:
+        blocksize = self.sample_rate // 10
+        silence_blocks_required = round(self.silence_seconds * 10)
+        pre_roll: deque[bytes] = deque(maxlen=4)
+        frames: list[bytes] = []
+        speaking = False
+        silent_blocks = 0
+
+        def callback(indata, frames_count, time, status) -> None:  # noqa: ANN001
+            self.audio.put(bytes(indata))
+
+        print("Ouvindo com Whisper...")
+        with self.sd.RawInputStream(
+            samplerate=self.sample_rate,
+            blocksize=blocksize,
+            dtype="int16",
+            channels=1,
+            callback=callback,
+        ):
+            while True:
+                chunk = self.audio.get()
+                rms = self._rms(chunk)
+                if not speaking:
+                    pre_roll.append(chunk)
+                    if rms >= self.speech_threshold:
+                        speaking = True
+                        frames.extend(pre_roll)
+                    continue
+
+                frames.append(chunk)
+                silent_blocks = silent_blocks + 1 if rms < self.speech_threshold else 0
+                if silent_blocks >= silence_blocks_required or len(frames) >= 150:
+                    break
+
+        return self._transcribe(frames)
+
+    def _transcribe(self, frames: list[bytes]) -> str:
+        temporary = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        temporary_path = Path(temporary.name)
+        temporary.close()
+        try:
+            with wave.open(str(temporary_path), "wb") as audio_file:
+                audio_file.setnchannels(1)
+                audio_file.setsampwidth(2)
+                audio_file.setframerate(self.sample_rate)
+                audio_file.writeframes(b"".join(frames))
+            result = subprocess.run(
+                [
+                    self.executable,
+                    "-m", str(self.model_path),
+                    "-f", str(temporary_path),
+                    "-l", "pt",
+                    "-nt", "-np", "-t", "6",
+                    "--prompt", self.PROMPT,
+                ],
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            if result.returncode != 0:
+                raise RuntimeError(result.stderr.strip() or "Falha na transcrição Whisper.")
+            return " ".join(result.stdout.split()).strip(" .")
+        finally:
+            temporary_path.unlink(missing_ok=True)
+
+    @staticmethod
+    def _rms(chunk: bytes) -> int:
+        samples = array("h")
+        samples.frombytes(chunk)
+        if not samples:
+            return 0
+        return int((sum(sample * sample for sample in samples) / len(samples)) ** 0.5)

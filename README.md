@@ -1,7 +1,7 @@
 # NOVA
 
 **Neural Operations & Virtual Assistant** é uma assistente local para macOS,
-controlada por texto ou voz. O reconhecimento de voz usa Vosk e funciona offline;
+controlada por texto ou voz. O reconhecimento principal usa Whisper e funciona offline;
 nenhum áudio precisa ser enviado para a nuvem.
 
 ## O que esta primeira versão faz
@@ -44,12 +44,14 @@ pip install -e '.[voice]'
 mkdir -p models
 ```
 
-Baixe um modelo Vosk em português em <https://alphacephei.com/vosk/models>,
-extraia-o e renomeie a pasta para `models/vosk-pt`. Depois execute:
+Instale `whisper.cpp` pelo Homebrew e coloque o modelo multilíngue `ggml-small.bin`
+em `models/whisper/`. Depois execute:
 
 ```bash
 nova --voice
 ```
+
+O Vosk antigo continua disponível como fallback com `nova --voice --engine vosk`.
 
 Na primeira execução, o macOS pedirá acesso ao microfone. Para controlar outros
 aplicativos, talvez também peça autorização em **Ajustes do Sistema → Privacidade e
