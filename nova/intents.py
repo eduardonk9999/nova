@@ -43,6 +43,13 @@ def normalize(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def normalize_research_topic(topic: str) -> str:
+    """Converte formas comuns ditadas de termos alfanuméricos."""
+    topic = re.sub(r"\b(?:h|aga) (?:dois|2) (?:o|zero|pes)\b", "H2O", topic)
+    topic = re.sub(r"\b(?:h|aga) (?:vinte|2 zero)\b", "H20", topic)
+    return topic
+
+
 def parse(text: str, wake_word: str = "nova") -> Intent:
     command = normalize(text)
     if command.startswith(f"{wake_word} "):
@@ -68,12 +75,22 @@ def parse(text: str, wake_word: str = "nova") -> Intent:
         return Intent(Action.SCREENSHOT)
 
     match = re.fullmatch(
+        r"(?:pesquise|pesquisar|busque|buscar|procure|procurar) (?:no|usando o) (codex|codax|codigo x)(?: por| sobre)? (.+)",
+        command,
+    )
+    if match:
+        topic = normalize_research_topic(match.group(2))
+        research_prompt = f"Pesquise na internet sobre {topic} e apresente um resumo com as fontes."
+        return Intent(Action.SEND_TO_APP, target=f"codex\n{research_prompt}")
+
+    match = re.fullmatch(
         r"(?:pesquise|pesquisar|busque|buscar|procure|procurar) (.+?) (?:no|usando o) (codex|codax|codigo x)",
         command,
     )
     if match:
+        topic = normalize_research_topic(match.group(1))
         research_prompt = (
-            f"Pesquise na internet sobre {match.group(1)} e apresente um resumo com as fontes."
+            f"Pesquise na internet sobre {topic} e apresente um resumo com as fontes."
         )
         return Intent(Action.SEND_TO_APP, target=f"codex\n{research_prompt}")
 

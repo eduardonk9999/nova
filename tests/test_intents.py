@@ -105,6 +105,20 @@ def test_research_using_codex_offline_name() -> None:
     assert intent.target.startswith("codex\nPesquise na internet sobre arquitetura de agentes")
 
 
+def test_research_codex_before_topic() -> None:
+    intent = parse("pesquise no Codex H dois O")
+    assert intent.action is Action.SEND_TO_APP
+    assert intent.target == (
+        "codex\nPesquise na internet sobre H2O e apresente um resumo com as fontes."
+    )
+
+
+def test_research_h20_spoken_form() -> None:
+    intent = parse("pesquise agá vinte no código X")
+    assert intent.action is Action.SEND_TO_APP
+    assert "sobre H20" in (intent.target or "")
+
+
 def test_mute_and_screenshot() -> None:
     assert parse("NOVA, tire o som").action is Action.MUTE
     assert parse("NOVA, tire um print").action is Action.SCREENSHOT

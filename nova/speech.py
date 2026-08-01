@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import queue
+import re
 import subprocess
 from pathlib import Path
 
@@ -40,6 +41,7 @@ class VoskListener:
             self.audio.put(bytes(indata))
 
         print("Ouvindo...")
+        phrases: list[str] = []
         with self.sd.RawInputStream(
             samplerate=self.sample_rate,
             blocksize=8000,
@@ -52,5 +54,18 @@ class VoskListener:
                     result = json.loads(self.recognizer.Result())
                     text = result.get("text", "").strip()
                     if text:
-                        return text
+                        phrases.append(text)
+                        combined = " ".join(phrases)
+                        # O modelo pode encerrar na pausa entre "H" e "dois O".
+                        # Mantemos a escuta se uma pesquisa no Codex termina em letra isolada.
+                        if self._research_needs_continuation(combined):
+                            print("Continue o termo...")
+                            continue
+                        return combined
 
+    @staticmethod
+    def _research_needs_continuation(text: str) -> bool:
+        normalized = text.lower().strip()
+        is_research = any(word in normalized for word in ("pesquise", "busque", "procure"))
+        mentions_codex = any(word in normalized for word in ("codex", "codax", "códex"))
+        return is_research and mentions_codex and bool(re.search(r"\bh$", normalized))
