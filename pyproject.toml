@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nova-assistant"
-version = "0.1.0"
+version = "0.2.0"
 description = "NOVA — Neural Operations & Virtual Assistant"
 requires-python = ">=3.11"
 dependencies = []
@@ -15,9 +15,11 @@ voice = [
   "vosk>=0.3.44",
 ]
 dev = ["pytest>=8.0"]
+desktop = ["rumps>=0.4.0"]
 
 [project.scripts]
 nova = "nova.main:main"
+nova-menubar = "nova.menubar:main"
 
 [tool.setuptools.packages.find]
 include = ["nova*"]

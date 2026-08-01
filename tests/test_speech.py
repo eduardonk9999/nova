@@ -1,6 +1,6 @@
 from array import array
 
-from nova.speech import VoskListener, WhisperListener
+from nova.speech import Recognition, VoskListener, WhisperListener
 
 
 def test_research_ending_in_letter_waits_for_continuation() -> None:
@@ -24,3 +24,9 @@ def test_feminine_voice_is_default() -> None:
     from nova.speech import Speaker
 
     assert Speaker(enabled=False).voice == "Luciana"
+
+
+def test_recognition_carries_confidence() -> None:
+    recognition = Recognition("NOVA, abra o Safari", 0.91)
+    assert recognition.text.startswith("NOVA")
+    assert recognition.confidence == 0.91

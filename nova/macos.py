@@ -14,6 +14,7 @@ class MacOSController:
 
     def open_app(self, spoken_name: str) -> str:
         app = self.app_name(spoken_name)
+        self._ensure_app(app)
         result = subprocess.run(
             ["open", "-a", app], capture_output=True, text=True, timeout=10
         )
@@ -23,12 +24,14 @@ class MacOSController:
 
     def close_app(self, spoken_name: str) -> str:
         app = self.app_name(spoken_name)
+        self._ensure_app(app)
         script = 'on run argv\ntell application (item 1 of argv) to quit\nend run'
         self._applescript(script, app)
         return f"Fechando {app}."
 
     def focus_app(self, spoken_name: str) -> str:
         app = self.app_name(spoken_name)
+        self._ensure_app(app)
         script = 'on run argv\ntell application (item 1 of argv) to activate\nend run'
         self._applescript(script, app)
         return f"Mostrando {app}."
@@ -63,6 +66,8 @@ end run"""
 
     def open_claude_project(self, project_name: str) -> str:
         """Abre um Project pelo nome usando a árvore de Acessibilidade do Claude."""
+        self._ensure_app("Claude")
+        self._ensure_accessibility()
         script = """on run argv
 set projectName to item 1 of argv
 tell application "Claude" to activate
@@ -125,18 +130,61 @@ end run"""
 
     def send_to_app(self, spoken_app: str, prompt: str) -> str:
         app = self.app_name(spoken_app)
+        self._ensure_app(app)
+        self._ensure_accessibility()
+        launch = subprocess.run(
+            ["open", "-a", app], capture_output=True, text=True, timeout=10
+        )
+        if launch.returncode != 0:
+            raise RuntimeError(f"Não consegui abrir {app}.")
         script = """on run argv
 set appName to item 1 of argv
 set promptText to item 2 of argv
-tell application appName to activate
-delay 0.5
-tell application "System Events"
-    keystroke promptText
-    key code 36
-end tell
+set previousClipboard to the clipboard
+try
+    set the clipboard to promptText
+    delay 0.8
+    tell application "System Events"
+        tell process appName
+            set frontmost to true
+            keystroke "v" using command down
+            key code 36
+        end tell
+    end tell
+    delay 0.2
+    set the clipboard to previousClipboard
+on error errorMessage number errorNumber
+    set the clipboard to previousClipboard
+    error errorMessage number errorNumber
+end try
 end run"""
         self._applescript(script, app, prompt)
         return f"Enviei a solicitação para {app}."
+
+    @staticmethod
+    def _ensure_app(app: str) -> None:
+        result = subprocess.run(
+            ["open", "-Ra", app], capture_output=True, text=True, timeout=10
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"Não encontrei o aplicativo {app} instalado no macOS.")
+
+    @staticmethod
+    def _ensure_accessibility() -> None:
+        result = subprocess.run(
+            [
+                "osascript", "-e",
+                'tell application "System Events" to return UI elements enabled',
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode != 0 or result.stdout.strip().lower() != "true":
+            raise RuntimeError(
+                "Permita Acessibilidade para o Terminal/Codex em Ajustes do Sistema, "
+                "Privacidade e Segurança, Acessibilidade."
+            )
 
     @staticmethod
     def _applescript(script: str, *args: str) -> None:

@@ -55,6 +55,7 @@ def main() -> None:
                     silence_seconds=whisper_settings.get("silence_seconds", 1.2),
                     speech_threshold=whisper_settings.get("speech_threshold", 350),
                     language=whisper_settings.get("language", "pt"),
+                    use_gpu=whisper_settings.get("use_gpu", False),
                 )
             else:
                 model = args.model or ROOT / "models" / "vosk-pt"
@@ -67,13 +68,18 @@ def main() -> None:
     running = True
     while running:
         try:
-            command = listener.listen() if listener else input("Você: ").strip()
+            recognized = listener.listen() if listener else None
+            command = recognized.text if recognized else input("Você: ").strip()
             if command:
                 print(f"Você: {command}" if listener else "", end="\n" if listener else "")
                 require_wake_word = listener is not None and settings.get(
                     "require_wake_word", True
                 )
-                running = assistant.handle(command, require_wake_word=require_wake_word)
+                running = assistant.handle(
+                    command,
+                    require_wake_word=require_wake_word,
+                    confidence=recognized.confidence if recognized else None,
+                )
         except (EOFError, KeyboardInterrupt):
             print()
             assistant.speaker.stop()

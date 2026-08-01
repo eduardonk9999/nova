@@ -4,6 +4,16 @@
 controlada por texto ou voz. O reconhecimento principal usa Whisper e funciona offline;
 nenhum áudio precisa ser enviado para a nuvem.
 
+## Arquitetura de interação 0.2
+
+1. Resposta de voz assíncrona e interrompível com `NOVA, stop`.
+2. Palavra de ativação obrigatória no modo de voz.
+3. Confiança real do Whisper e confirmação para ações incertas ou sensíveis.
+4. Roteador de linguagem natural para variações comuns dos comandos.
+5. Contexto de sessão para `repita`, `agora no Claude` e pesquisas de continuação.
+6. Integrações verificadas com Codex e Claude, preservando o clipboard.
+7. Aplicativo opcional de barra de menus para controlar o processo e consultar logs.
+
 ## O que esta primeira versão faz
 
 - abre, fecha e traz aplicativos para frente;
@@ -62,6 +72,20 @@ ambientes sem a palavra de ativação são transcritas localmente e ignoradas. A
 
 Nome, palavra de ativação, voz feminina e sensibilidade do microfone ficam em
 `config/settings.json`, sem necessidade de alterar o código Python.
+
+Antes de enviar texto a Codex ou Claude, a NOVA confirma que o aplicativo existe
+e que a permissão de Acessibilidade está ativa. O envio preserva o conteúdo anterior
+da área de transferência e informa claramente quando uma permissão está faltando.
+
+## Barra de menus
+
+```bash
+pip install -e '.[desktop]'
+nova-menubar
+```
+
+O ícone `✦` permite iniciar e parar a NOVA, acompanhar o estado e abrir configurações,
+log ou projeto sem manter uma janela de Terminal aberta.
 
 Na primeira execução, o macOS pedirá acesso ao microfone. Para controlar outros
 aplicativos, talvez também peça autorização em **Ajustes do Sistema → Privacidade e

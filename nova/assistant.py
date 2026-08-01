@@ -5,7 +5,9 @@ from pathlib import Path
 
 from nova.intents import Action, contains_stop_command, has_wake_word, parse
 from nova.macos import MacOSController
+from nova.context import ConversationContext
 from nova.projects import ProjectRegistry
+from nova.router import IntentRouter
 from nova.speech import Speaker
 from nova.terminal import TerminalPolicy
 
@@ -33,7 +35,11 @@ class NovaAssistant:
         self.projects: dict[str, dict[str, str]] = {}
         self.project_registry = ProjectRegistry({})
         self.pending_command: str | None = None
+        self.pending_voice_command: str | None = None
         self.wake_word = wake_word
+        self.minimum_confidence = 0.55
+        self.router = IntentRouter(wake_word)
+        self.context = ConversationContext()
 
     def set_projects(
         self, projects: dict[str, dict[str, str]], roots: list[str] | None = None
@@ -41,7 +47,12 @@ class NovaAssistant:
         self.projects = projects
         self.project_registry = ProjectRegistry(projects, roots)
 
-    def handle(self, command: str, require_wake_word: bool = False) -> bool:
+    def handle(
+        self,
+        command: str,
+        require_wake_word: bool = False,
+        confidence: float | None = None,
+    ) -> bool:
         if contains_stop_command(command, self.wake_word):
             self.speaker.stop()
             print("NOVA: escuta encerrada.")
@@ -49,7 +60,27 @@ class NovaAssistant:
         if require_wake_word and not has_wake_word(command, self.wake_word):
             print(f"Ignorado sem palavra de ativação: {command}")
             return True
-        intent = parse(command)
+        contextual_intent = self.context.resolve(command, self.wake_word)
+        route = self.router.route(command)
+        intent = contextual_intent or route.intent
+        if intent.action is Action.CONFIRM and self.pending_voice_command:
+            pending = self.pending_voice_command
+            self.pending_voice_command = None
+            return self.handle(pending, require_wake_word=False, confidence=1.0)
+        low_risk = {
+            Action.WAKE, Action.TIME, Action.HELP, Action.GREETING, Action.THANKS,
+            Action.STATUS, Action.STOP_SILENT, Action.EXIT, Action.UNKNOWN,
+        }
+        if (
+            confidence is not None
+            and confidence < self.minimum_confidence
+            and intent.action not in low_risk
+        ):
+            self.pending_voice_command = command
+            self.speaker.say(
+                f"Não tenho certeza se entendi: {command}. Diga NOVA confirmar ou NOVA cancelar."
+            )
+            return True
         try:
             if intent.action is Action.OPEN_APP:
                 response = self.controller.open_app(intent.target or "")
@@ -78,6 +109,7 @@ class NovaAssistant:
                 response = self._confirm_terminal()
             elif intent.action is Action.CANCEL:
                 self.pending_command = None
+                self.pending_voice_command = None
                 response = "Comando cancelado."
             elif intent.action is Action.CLOSE_APP:
                 response = self.controller.close_app(intent.target or "")
@@ -97,6 +129,8 @@ class NovaAssistant:
                 response = "Por nada."
             elif intent.action is Action.STATUS:
                 response = "Estou aqui e ouvindo."
+            elif intent.action is Action.REPEAT:
+                response = self.context.last_response or "Ainda não há uma resposta para repetir."
             elif intent.action is Action.EXIT:
                 self.speaker.say("Até logo.")
                 return False
@@ -108,6 +142,7 @@ class NovaAssistant:
                 response = "Ainda não entendi esse comando. Diga ajuda para ver exemplos."
         except (RuntimeError, OSError) as exc:
             response = str(exc)
+        self.context.remember(intent, response)
         self.speaker.say(response)
         return True
 

@@ -41,3 +41,17 @@ def test_stop_interrupts_speaker_and_session() -> None:
     instance, speaker = assistant()
     assert not instance.handle("resposta anterior NOVA stop", require_wake_word=True)
     assert speaker.stopped
+
+
+def test_low_confidence_action_requires_confirmation() -> None:
+    instance, speaker = assistant()
+    assert instance.handle("NOVA, abra o Safari", require_wake_word=True, confidence=0.2)
+    assert instance.pending_voice_command == "NOVA, abra o Safari"
+    assert "Não tenho certeza" in speaker.messages[-1]
+
+
+def test_low_confidence_informational_command_is_safe() -> None:
+    instance, speaker = assistant()
+    assert instance.handle("NOVA, que horas são", require_wake_word=True, confidence=0.2)
+    assert instance.pending_voice_command is None
+    assert speaker.messages[-1].startswith("Agora são")

@@ -6,6 +6,7 @@
   "whisper": {
     "speech_threshold": 350,
     "silence_seconds": 1.2,
-    "language": "pt"
+    "language": "pt",
+    "use_gpu": false
   }
 }

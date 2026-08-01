@@ -29,6 +29,7 @@ class Action(str, Enum):
     GREETING = "greeting"
     THANKS = "thanks"
     STATUS = "status"
+    REPEAT = "repeat"
     EXIT = "exit"
     STOP_SILENT = "stop_silent"
     UNKNOWN = "unknown"

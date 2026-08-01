@@ -8,7 +8,14 @@ import tempfile
 import wave
 from array import array
 from collections import deque
+from dataclasses import dataclass
 from pathlib import Path
+
+
+@dataclass(frozen=True)
+class Recognition:
+    text: str
+    confidence: float | None = None
 
 
 class Speaker:
@@ -74,7 +81,7 @@ class VoskListener:
         self.sample_rate = sample_rate
         self.audio: queue.Queue[bytes] = queue.Queue()
 
-    def listen(self) -> str:
+    def listen(self) -> Recognition:
         def callback(indata, frames, time, status) -> None:  # noqa: ANN001
             self.audio.put(bytes(indata))
 
@@ -99,7 +106,11 @@ class VoskListener:
                         if self._research_needs_continuation(combined):
                             print("Continue o termo...")
                             continue
-                        return combined
+                        words = result.get("result", [])
+                        confidence = None
+                        if words:
+                            confidence = sum(word.get("conf", 0.0) for word in words) / len(words)
+                        return Recognition(combined, confidence)
 
     @staticmethod
     def _research_needs_continuation(text: str) -> bool:
@@ -125,6 +136,7 @@ class WhisperListener:
         silence_seconds: float = 1.2,
         speech_threshold: int = 350,
         language: str = "pt",
+        use_gpu: bool = False,
     ) -> None:
         try:
             import sounddevice as sd
@@ -141,9 +153,10 @@ class WhisperListener:
         self.silence_seconds = silence_seconds
         self.speech_threshold = speech_threshold
         self.language = language
+        self.use_gpu = use_gpu
         self.audio: queue.Queue[bytes] = queue.Queue()
 
-    def listen(self) -> str:
+    def listen(self) -> Recognition:
         blocksize = self.sample_rate // 10
         silence_blocks_required = round(self.silence_seconds * 10)
         pre_roll: deque[bytes] = deque(maxlen=4)
@@ -179,34 +192,51 @@ class WhisperListener:
 
         return self._transcribe(frames)
 
-    def _transcribe(self, frames: list[bytes]) -> str:
+    def _transcribe(self, frames: list[bytes]) -> Recognition:
         temporary = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
         temporary_path = Path(temporary.name)
         temporary.close()
+        output_base = temporary_path.with_suffix("")
+        output_json = output_base.with_suffix(".json")
         try:
             with wave.open(str(temporary_path), "wb") as audio_file:
                 audio_file.setnchannels(1)
                 audio_file.setsampwidth(2)
                 audio_file.setframerate(self.sample_rate)
                 audio_file.writeframes(b"".join(frames))
-            result = subprocess.run(
-                [
+            command = [
                     self.executable,
                     "-m", str(self.model_path),
                     "-f", str(temporary_path),
                     "-l", self.language,
-                    "-nt", "-np", "-t", "6",
+                    "-nt", "-t", "6",
+                    "--output-json-full", "--output-file", str(output_base),
                     "--prompt", self.PROMPT,
-                ],
+                ]
+            if not self.use_gpu:
+                command.insert(1, "-ng")
+            result = subprocess.run(
+                command,
                 capture_output=True,
                 text=True,
                 timeout=60,
             )
             if result.returncode != 0:
                 raise RuntimeError(result.stderr.strip() or "Falha na transcrição Whisper.")
-            return " ".join(result.stdout.split()).strip(" .")
+            payload = json.loads(output_json.read_text(encoding="utf-8"))
+            segments = payload.get("transcription", [])
+            text = " ".join(segment.get("text", "").strip() for segment in segments).strip(" .")
+            probabilities = [
+                token["p"]
+                for segment in segments
+                for token in segment.get("tokens", [])
+                if token.get("p") is not None and not token.get("text", "").startswith("[_")
+            ]
+            confidence = sum(probabilities) / len(probabilities) if probabilities else None
+            return Recognition(text, confidence)
         finally:
             temporary_path.unlink(missing_ok=True)
+            output_json.unlink(missing_ok=True)
 
     @staticmethod
     def _rms(chunk: bytes) -> int:
