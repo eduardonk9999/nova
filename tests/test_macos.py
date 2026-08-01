@@ -23,3 +23,7 @@ def test_accessibility_permission_is_checked(run: Mock) -> None:
 def test_accessibility_permission_accepts_true(run: Mock) -> None:
     run.return_value = Mock(returncode=0, stdout="true\n")
     MacOSController._ensure_accessibility()
+
+
+def test_codex_uses_real_macos_process_name() -> None:
+    assert MacOSController.PROCESS_NAMES["Codex"] == "ChatGPT"

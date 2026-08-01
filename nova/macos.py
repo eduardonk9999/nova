@@ -6,6 +6,11 @@ from urllib.parse import quote_plus
 
 
 class MacOSController:
+    PROCESS_NAMES = {
+        "Codex": "ChatGPT",
+        "Claude": "Claude",
+    }
+
     def __init__(self, aliases: dict[str, str]) -> None:
         self.aliases = aliases
 
@@ -130,6 +135,7 @@ end run"""
 
     def send_to_app(self, spoken_app: str, prompt: str) -> str:
         app = self.app_name(spoken_app)
+        process_name = self.PROCESS_NAMES.get(app, app)
         self._ensure_app(app)
         self._ensure_accessibility()
         launch = subprocess.run(
@@ -140,13 +146,19 @@ end run"""
         script = """on run argv
 set appName to item 1 of argv
 set promptText to item 2 of argv
+set processName to item 3 of argv
 set previousClipboard to the clipboard
 try
     set the clipboard to promptText
-    delay 0.8
     tell application "System Events"
-        tell process appName
+        repeat 20 times
+            if exists process processName then exit repeat
+            delay 0.25
+        end repeat
+        if not (exists process processName) then error "Processo do aplicativo não iniciou."
+        tell process processName
             set frontmost to true
+            delay 0.5
             keystroke "v" using command down
             key code 36
         end tell
@@ -158,7 +170,7 @@ on error errorMessage number errorNumber
     error errorMessage number errorNumber
 end try
 end run"""
-        self._applescript(script, app, prompt)
+        self._applescript(script, app, prompt, process_name)
         return f"Enviei a solicitação para {app}."
 
     @staticmethod
