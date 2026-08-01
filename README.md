@@ -79,6 +79,9 @@ inicia um briefing seguro, sem criar arquivos antes da confirmação do usuário
 Nome, palavra de ativação, voz feminina e sensibilidade do microfone ficam em
 `config/settings.json`, sem necessidade de alterar o código Python.
 
+O perfil padrão usa limiar de voz `200` e espera `2 segundos` de silêncio, valores
+calibrados para evitar que pausas naturais dividam um comando em vários fragmentos.
+
 Antes de enviar texto a Codex ou Claude, a NOVA confirma que o aplicativo existe
 e que a permissão de Acessibilidade está ativa. O envio preserva o conteúdo anterior
 da área de transferência e informa claramente quando uma permissão está faltando.
