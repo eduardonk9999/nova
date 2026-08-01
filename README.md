@@ -73,6 +73,9 @@ ambientes sem a palavra de ativação são transcritas localmente e ignoradas. A
 Também é possível dizer apenas `NOVA`, esperar `Pois não?` e falar um comando nos
 8 segundos seguintes. A janela aceita somente um comando e fecha automaticamente.
 
+`NOVA, crie um novo projeto no Codex chamado X` abre uma nova tarefa no Codex e
+inicia um briefing seguro, sem criar arquivos antes da confirmação do usuário.
+
 Nome, palavra de ativação, voz feminina e sensibilidade do microfone ficam em
 `config/settings.json`, sem necessidade de alterar o código Python.
 

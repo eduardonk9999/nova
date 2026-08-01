@@ -13,6 +13,7 @@ class Action(str, Enum):
     OPEN_CLAUDE_CODE = "open_claude_code"
     OPEN_PROJECT_CLAUDE_CODE = "open_project_claude_code"
     OPEN_CLAUDE_PROJECT = "open_claude_project"
+    CREATE_CODEX_PROJECT = "create_codex_project"
     SEARCH_WEB = "search_web"
     START_PROJECT = "start_project"
     RUN_TERMINAL = "run_terminal"
@@ -127,6 +128,13 @@ def parse(text: str, wake_word: str = "nova") -> Intent:
             f"Pesquise na internet sobre {topic} e apresente um resumo com as fontes."
         )
         return Intent(Action.SEND_TO_APP, target=f"codex\n{research_prompt}")
+
+    match = re.fullmatch(
+        r"(?:inicie|iniciar|iniciou|comece|crie|criar|crio) (?:um )?(?:novo )?projeto (?:no|para o) (?:codex|codax|codigo x) (?:chamado|com o nome de) (.+)",
+        command,
+    )
+    if match:
+        return Intent(Action.CREATE_CODEX_PROJECT, target=match.group(1))
 
     match = re.fullmatch(
         r"(?:abra|abrir|inicie|iniciar) (?:o )?projeto (.+?) (?:no|com o) (?:claude|claudio) code",

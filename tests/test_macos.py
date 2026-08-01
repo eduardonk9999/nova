@@ -27,3 +27,13 @@ def test_accessibility_permission_accepts_true(run: Mock) -> None:
 
 def test_codex_uses_real_macos_process_name() -> None:
     assert MacOSController.PROCESS_NAMES["Codex"] == "ChatGPT"
+
+
+@patch.object(MacOSController, "send_to_app")
+def test_new_codex_project_starts_new_conversation(send: Mock) -> None:
+    controller = MacOSController({"codex": "Codex"})
+    response = controller.create_codex_project("GV")
+    assert "GV" in response
+    send.assert_called_once()
+    assert send.call_args.kwargs["new_conversation"] is True
+    assert "Não crie nem altere arquivos" in send.call_args.args[1]

@@ -98,6 +98,8 @@ class NovaAssistant:
                 response = self._open_project_in_claude_code(intent.target or "")
             elif intent.action is Action.OPEN_CLAUDE_PROJECT:
                 response = self.controller.open_claude_project(intent.target or "")
+            elif intent.action is Action.CREATE_CODEX_PROJECT:
+                response = self.controller.create_codex_project(intent.target or "")
             elif intent.action is Action.SEARCH_WEB:
                 response = self.controller.search_web(intent.target or "")
             elif intent.action is Action.START_PROJECT:
@@ -130,12 +132,13 @@ class NovaAssistant:
             elif intent.action is Action.HELP:
                 response = HELP
             elif intent.action is Action.WAKE:
-                self.awake_until = monotonic() + self.dialog_window_seconds
                 response = "Pois não?"
                 self.context.remember(intent, response)
                 # Espera a confirmação terminar para não capturar a própria voz
                 # como o comando que virá dentro da janela de diálogo.
                 self.speaker.say(response, wait=True)
+                # A contagem começa depois que a resposta terminou de tocar.
+                self.awake_until = monotonic() + self.dialog_window_seconds
                 return True
             elif intent.action is Action.GREETING:
                 response = "Olá. Como posso ajudar?"

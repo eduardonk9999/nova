@@ -133,7 +133,9 @@ end run"""
         self._applescript(script, str(working_directory), command)
         return f"Executando no Terminal: {command}."
 
-    def send_to_app(self, spoken_app: str, prompt: str) -> str:
+    def send_to_app(
+        self, spoken_app: str, prompt: str, new_conversation: bool = False
+    ) -> str:
         app = self.app_name(spoken_app)
         process_name = self.PROCESS_NAMES.get(app, app)
         self._ensure_app(app)
@@ -147,6 +149,7 @@ end run"""
 set appName to item 1 of argv
 set promptText to item 2 of argv
 set processName to item 3 of argv
+set startNewConversation to (item 4 of argv is "true")
 set previousClipboard to the clipboard
 try
     set the clipboard to promptText
@@ -159,6 +162,10 @@ try
         tell process processName
             set frontmost to true
             delay 0.5
+            if startNewConversation then
+                keystroke "n" using command down
+                delay 0.7
+            end if
             keystroke "v" using command down
             key code 36
         end tell
@@ -170,8 +177,19 @@ on error errorMessage number errorNumber
     error errorMessage number errorNumber
 end try
 end run"""
-        self._applescript(script, app, prompt, process_name)
+        self._applescript(
+            script, app, prompt, process_name, str(new_conversation).lower()
+        )
         return f"Enviei a solicitação para {app}."
+
+    def create_codex_project(self, project_name: str) -> str:
+        prompt = (
+            f"Quero iniciar um novo projeto chamado {project_name}. "
+            "Comece perguntando objetivo, stack, requisitos e diretório desejado. "
+            "Não crie nem altere arquivos até eu confirmar o planejamento."
+        )
+        self.send_to_app("codex", prompt, new_conversation=True)
+        return f"Iniciei uma nova tarefa no Codex para o projeto {project_name}."
 
     @staticmethod
     def _ensure_app(app: str) -> None:
