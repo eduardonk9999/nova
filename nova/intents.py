@@ -129,12 +129,16 @@ def parse(text: str, wake_word: str = "nova") -> Intent:
         )
         return Intent(Action.SEND_TO_APP, target=f"codex\n{research_prompt}")
 
-    match = re.fullmatch(
-        r"(?:inicie|iniciar|iniciou|comece|cri|crie|criar|crio) (?:um )?(?:novo )?projeto (?:no|para o) (?:codex|codax|codigo x) (?:chamado|com o nome de) (.+)",
-        command,
+    # Extração semântica tolerante a artigos e pequenas variações do Whisper:
+    # "crie um", "cri o", "iniciou um" etc.
+    create_verb = any(
+        word.startswith(("cri", "inici", "comec")) for word in command.split()
     )
-    if match:
-        return Intent(Action.CREATE_CODEX_PROJECT, target=match.group(1))
+    mentions_project = "projeto" in command.split()
+    mentions_codex = any(name in command for name in ("codex", "codax", "codigo x"))
+    project_name = re.search(r"(?:chamado|com o nome(?: de)?) (.+)$", command)
+    if create_verb and mentions_project and mentions_codex and project_name:
+        return Intent(Action.CREATE_CODEX_PROJECT, target=project_name.group(1))
 
     match = re.fullmatch(
         r"(?:abra|abrir|inicie|iniciar) (?:o )?projeto (.+?) (?:no|com o) (?:claude|claudio) code",
