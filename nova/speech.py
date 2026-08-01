@@ -124,8 +124,8 @@ class WhisperListener:
     """Captura uma frase e usa whisper.cpp local para transcrevê-la."""
 
     PROMPT = (
-        "NOVA, Codex, Claude, Claude Code, H2O, H20, GitHub, Python, terminal, "
-        "projeto, pesquisar, aplicativo"
+        "NOVA, Codex, Claude, Claude Code, GitHub, Python, terminal, projeto, "
+        "crie, iniciar, novo projeto, chamado, pesquisar, aplicativo"
     )
 
     def __init__(

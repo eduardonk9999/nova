@@ -17,6 +17,9 @@ class IntentRouter:
     """Aplica variações naturais antes do parser determinístico e seguro."""
 
     REWRITES = (
+        # Fallback observado quando o antigo prompt do Whisper confundiu
+        # "crie um" com "H2O" antes de "novo projeto".
+        (r"^h2o novo projeto ", "crie um novo projeto "),
         (r"^(?:faca|faz) uma pesquisa(?: na internet)? sobre ", "pesquise "),
         (r"^quero que (?:voce )?(?:pesquise|busque) ", "pesquise "),
         (r"^(?:me diga|me fala|diga) que horas sao(?: agora)?$", "que horas sao"),
@@ -49,4 +52,3 @@ class IntentRouter:
         candidate = f"{self.wake_word} {rewritten}" if had_wake_word else rewritten
         intent = parse(candidate, self.wake_word)
         return Route(intent, candidate, corrected=intent.action is not Action.UNKNOWN)
-

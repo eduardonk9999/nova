@@ -88,6 +88,12 @@ def test_create_new_codex_project_from_real_transcription() -> None:
     assert intent.target == "gv"
 
 
+def test_create_codex_project_from_whisper_audio_transcription() -> None:
+    intent = parse("NOVA, Cri um novo projeto no Codex chamado GV")
+    assert intent.action is Action.CREATE_CODEX_PROJECT
+    assert intent.target == "gv"
+
+
 def test_open_project_inside_claude_app() -> None:
     intent = parse("mostre o projeto Site dentro do aplicativo Cláudio")
     assert intent.action is Action.OPEN_CLAUDE_PROJECT

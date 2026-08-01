@@ -18,3 +18,10 @@ def test_colloquial_open_is_rewritten() -> None:
 def test_unknown_text_remains_unknown() -> None:
     route = IntentRouter().route("NOVA, transforme o mundo")
     assert route.intent.action is Action.UNKNOWN
+
+
+def test_observed_h2o_mistranscription_maps_to_new_project() -> None:
+    route = IntentRouter().route("NOVA, H2O, novo projeto no Codex chamado GV")
+    assert route.corrected
+    assert route.intent.action is Action.CREATE_CODEX_PROJECT
+    assert route.intent.target == "gv"

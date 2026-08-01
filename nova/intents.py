@@ -130,7 +130,7 @@ def parse(text: str, wake_word: str = "nova") -> Intent:
         return Intent(Action.SEND_TO_APP, target=f"codex\n{research_prompt}")
 
     match = re.fullmatch(
-        r"(?:inicie|iniciar|iniciou|comece|crie|criar|crio) (?:um )?(?:novo )?projeto (?:no|para o) (?:codex|codax|codigo x) (?:chamado|com o nome de) (.+)",
+        r"(?:inicie|iniciar|iniciou|comece|cri|crie|criar|crio) (?:um )?(?:novo )?projeto (?:no|para o) (?:codex|codax|codigo x) (?:chamado|com o nome de) (.+)",
         command,
     )
     if match:
