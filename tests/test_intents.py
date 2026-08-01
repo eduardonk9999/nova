@@ -27,6 +27,10 @@ def test_nova_stop_is_silent_stop() -> None:
     assert parse("NOVA, parar").action is Action.STOP_SILENT
 
 
+def test_nova_stop_in_english_is_silent_stop() -> None:
+    assert parse("NOVA, stop").action is Action.STOP_SILENT
+
+
 def test_open_claude_code() -> None:
     assert parse("NOVA, abra o Claude Code").action is Action.OPEN_CLAUDE_CODE
 

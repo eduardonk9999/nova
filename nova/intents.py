@@ -58,7 +58,7 @@ def parse(text: str, wake_word: str = "nova") -> Intent:
     elif command == wake_word:
         return Intent(Action.HELP)
 
-    if command in {"parar", "pare", "parar de falar", "fique quieta"}:
+    if command in {"stop", "parar", "pare", "parar de falar", "fique quieta"}:
         return Intent(Action.STOP_SILENT)
     if command in {"sair", "encerrar", "desligar", "tchau"}:
         return Intent(Action.EXIT)
