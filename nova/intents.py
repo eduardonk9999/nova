@@ -68,6 +68,16 @@ def parse(text: str, wake_word: str = "nova") -> Intent:
         return Intent(Action.SCREENSHOT)
 
     match = re.fullmatch(
+        r"(?:pesquise|pesquisar|busque|buscar|procure|procurar) (.+?) (?:no|usando o) (codex|codax|codigo x)",
+        command,
+    )
+    if match:
+        research_prompt = (
+            f"Pesquise na internet sobre {match.group(1)} e apresente um resumo com as fontes."
+        )
+        return Intent(Action.SEND_TO_APP, target=f"codex\n{research_prompt}")
+
+    match = re.fullmatch(
         r"(?:abra|abrir|inicie|iniciar) (?:o )?projeto (.+?) (?:no|com o) (?:claude|claudio) code",
         command,
     )

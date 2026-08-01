@@ -13,7 +13,8 @@ from nova.terminal import TerminalPolicy
 HELP = (
     "Você pode dizer: abra o Safari, feche o Spotify, mostre o Finder, "
     "abra o Claude Code, pesquise na internet, inicie o projeto NOVA, "
-    "execute no terminal git status, pergunte ao Codex, tire um print, "
+    "execute no terminal git status, pesquise inteligência artificial no Codex, "
+    "pergunte ao Codex, tire um print, "
     "volume 40, ou sair."
 )
 

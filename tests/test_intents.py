@@ -91,6 +91,20 @@ def test_send_prompt_to_codex_with_offline_transcription() -> None:
     assert intent.target == "codex\nrode os testes"
 
 
+def test_research_using_codex() -> None:
+    intent = parse("NOVA, pesquise novidades do Python no Codex")
+    assert intent.action is Action.SEND_TO_APP
+    assert intent.target == (
+        "codex\nPesquise na internet sobre novidades do python e apresente um resumo com as fontes."
+    )
+
+
+def test_research_using_codex_offline_name() -> None:
+    intent = parse("busque arquitetura de agentes usando o código X")
+    assert intent.action is Action.SEND_TO_APP
+    assert intent.target.startswith("codex\nPesquise na internet sobre arquitetura de agentes")
+
+
 def test_mute_and_screenshot() -> None:
     assert parse("NOVA, tire o som").action is Action.MUTE
     assert parse("NOVA, tire um print").action is Action.SCREENSHOT

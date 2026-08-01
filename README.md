@@ -16,6 +16,7 @@ nenhum áudio precisa ser enviado para a nuvem.
 - descobre projetos em pastas configuradas e detecta Vite/npm, Django e Docker Compose;
 - executa comandos de desenvolvimento no Terminal com uma política de segurança;
 - envia prompts para Codex e Claude usando a Automação/Acessibilidade do macOS;
+- solicita pesquisas com fontes diretamente ao Codex por comandos como `pesquise X no Codex`;
 - silencia o Mac e salva capturas de tela por voz;
 - informa as horas;
 - responde em voz alta usando a voz nativa do macOS;
