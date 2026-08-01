@@ -80,6 +80,9 @@ class NovaAssistant:
             elif intent.action is Action.EXIT:
                 self.speaker.say("Até logo.")
                 return False
+            elif intent.action is Action.STOP_SILENT:
+                print("NOVA: escuta encerrada.")
+                return False
             else:
                 response = "Ainda não entendi esse comando. Diga ajuda para ver exemplos."
         except (RuntimeError, OSError) as exc:

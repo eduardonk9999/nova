@@ -54,6 +54,8 @@ nova --voice
 
 O Vosk antigo continua disponível como fallback com `nova --voice --engine vosk`.
 
+Para encerrar imediatamente sem resposta falada, diga `NOVA, parar`.
+
 Na primeira execução, o macOS pedirá acesso ao microfone. Para controlar outros
 aplicativos, talvez também peça autorização em **Ajustes do Sistema → Privacidade e
 Segurança → Automação**.
