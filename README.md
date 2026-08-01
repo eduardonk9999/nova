@@ -70,6 +70,9 @@ No modo de voz, todos os demais comandos precisam começar com `NOVA`. Conversas
 ambientes sem a palavra de ativação são transcritas localmente e ignoradas. A fala
 é executada de forma assíncrona, permitindo que `NOVA, stop` interrompa a resposta.
 
+Também é possível dizer apenas `NOVA`, esperar `Pois não?` e falar um comando nos
+8 segundos seguintes. A janela aceita somente um comando e fecha automaticamente.
+
 Nome, palavra de ativação, voz feminina e sensibilidade do microfone ficam em
 `config/settings.json`, sem necessidade de alterar o código Python.
 

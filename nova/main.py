@@ -36,6 +36,7 @@ def main() -> None:
     assistant = NovaAssistant(
         MacOSController(config["aliases"]), speaker, ROOT,
         wake_word=settings.get("wake_word", "nova"),
+        dialog_window_seconds=settings.get("dialog_window_seconds", 8),
     )
     projects_file = ROOT / "config" / "projects.json"
     if projects_file.exists():

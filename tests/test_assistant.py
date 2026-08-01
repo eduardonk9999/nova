@@ -55,3 +55,22 @@ def test_low_confidence_informational_command_is_safe() -> None:
     assert instance.handle("NOVA, que horas são", require_wake_word=True, confidence=0.2)
     assert instance.pending_voice_command is None
     assert speaker.messages[-1].startswith("Agora são")
+
+
+def test_wake_word_alone_opens_one_command_window() -> None:
+    instance, speaker = assistant()
+    assert instance.handle("NOVA", require_wake_word=True)
+    assert speaker.messages[-1] == "Pois não?"
+    assert instance.awake_until > 0
+    assert instance.handle("que horas são", require_wake_word=True)
+    assert speaker.messages[-1].startswith("Agora são")
+    assert instance.awake_until == 0
+
+
+def test_dialog_window_is_consumed_after_one_command() -> None:
+    instance, speaker = assistant()
+    instance.handle("NOVA", require_wake_word=True)
+    instance.handle("que horas são", require_wake_word=True)
+    message_count = len(speaker.messages)
+    instance.handle("abra o Safari", require_wake_word=True)
+    assert len(speaker.messages) == message_count

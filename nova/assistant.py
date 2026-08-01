@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from time import monotonic
 
 from nova.intents import Action, contains_stop_command, has_wake_word, parse
 from nova.macos import MacOSController
@@ -28,6 +29,7 @@ class NovaAssistant:
         speaker: Speaker,
         project_path: Path | None = None,
         wake_word: str = "nova",
+        dialog_window_seconds: float = 8.0,
     ) -> None:
         self.controller = controller
         self.speaker = speaker
@@ -40,6 +42,8 @@ class NovaAssistant:
         self.minimum_confidence = 0.55
         self.router = IntentRouter(wake_word)
         self.context = ConversationContext()
+        self.dialog_window_seconds = dialog_window_seconds
+        self.awake_until = 0.0
 
     def set_projects(
         self, projects: dict[str, dict[str, str]], roots: list[str] | None = None
@@ -57,9 +61,13 @@ class NovaAssistant:
             self.speaker.stop()
             print("NOVA: escuta encerrada.")
             return False
-        if require_wake_word and not has_wake_word(command, self.wake_word):
-            print(f"Ignorado sem palavra de ativação: {command}")
-            return True
+        wake_word_present = has_wake_word(command, self.wake_word)
+        if require_wake_word and not wake_word_present:
+            if monotonic() > self.awake_until:
+                print(f"Ignorado sem palavra de ativação: {command}")
+                return True
+            # A janela aberta por "NOVA" vale para apenas um comando.
+            self.awake_until = 0.0
         contextual_intent = self.context.resolve(command, self.wake_word)
         route = self.router.route(command)
         intent = contextual_intent or route.intent
@@ -122,7 +130,13 @@ class NovaAssistant:
             elif intent.action is Action.HELP:
                 response = HELP
             elif intent.action is Action.WAKE:
+                self.awake_until = monotonic() + self.dialog_window_seconds
                 response = "Pois não?"
+                self.context.remember(intent, response)
+                # Espera a confirmação terminar para não capturar a própria voz
+                # como o comando que virá dentro da janela de diálogo.
+                self.speaker.say(response, wait=True)
+                return True
             elif intent.action is Action.GREETING:
                 response = "Olá. Como posso ajudar?"
             elif intent.action is Action.THANKS:

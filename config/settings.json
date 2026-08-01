@@ -3,6 +3,7 @@
   "wake_word": "nova",
   "voice": "Luciana",
   "require_wake_word": true,
+  "dialog_window_seconds": 8,
   "whisper": {
     "speech_threshold": 350,
     "silence_seconds": 1.2,
