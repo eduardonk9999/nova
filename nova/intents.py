@@ -12,6 +12,7 @@ class Action(str, Enum):
     FOCUS_APP = "focus_app"
     OPEN_CLAUDE_CODE = "open_claude_code"
     OPEN_PROJECT_CLAUDE_CODE = "open_project_claude_code"
+    OPEN_CLAUDE_PROJECT = "open_claude_project"
     SEARCH_WEB = "search_web"
     START_PROJECT = "start_project"
     RUN_TERMINAL = "run_terminal"
@@ -72,6 +73,13 @@ def parse(text: str, wake_word: str = "nova") -> Intent:
     )
     if match:
         return Intent(Action.OPEN_PROJECT_CLAUDE_CODE, target=match.group(1))
+
+    match = re.fullmatch(
+        r"(?:abra|abrir|mostre|mostrar) (?:o )?projeto (.+?) (?:no|dentro do) (?:aplicativo )?(?:claude|claudio)",
+        command,
+    )
+    if match:
+        return Intent(Action.OPEN_CLAUDE_PROJECT, target=match.group(1))
 
     match = re.fullmatch(
         r"(?:abra|abrir|mostre|mostrar) (?:o )?(?:aplicativo|app) (?:claude|claudio)",

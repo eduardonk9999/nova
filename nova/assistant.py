@@ -44,6 +44,8 @@ class NovaAssistant:
                 response = self.controller.open_claude_code(self.project_path)
             elif intent.action is Action.OPEN_PROJECT_CLAUDE_CODE:
                 response = self._open_project_in_claude_code(intent.target or "")
+            elif intent.action is Action.OPEN_CLAUDE_PROJECT:
+                response = self.controller.open_claude_project(intent.target or "")
             elif intent.action is Action.SEARCH_WEB:
                 response = self.controller.search_web(intent.target or "")
             elif intent.action is Action.START_PROJECT:

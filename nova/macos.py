@@ -61,6 +61,49 @@ end run"""
         self._applescript(script, str(project_path))
         return "Abrindo o Claude Code no Terminal."
 
+    def open_claude_project(self, project_name: str) -> str:
+        """Abre um Project pelo nome usando a árvore de Acessibilidade do Claude."""
+        script = """on run argv
+set projectName to item 1 of argv
+tell application "Claude" to activate
+delay 1
+tell application "System Events"
+    tell process "Claude"
+        set frontmost to true
+        try
+            set allItems to entire contents of window 1
+            repeat with currentItem in allItems
+                try
+                    set itemName to name of currentItem as text
+                    ignoring case
+                        if itemName contains projectName then
+                            perform action "AXPress" of currentItem
+                            return "opened"
+                        end if
+                    end ignoring
+                end try
+            end repeat
+        end try
+    end tell
+end tell
+return "not-found"
+end run"""
+        result = subprocess.run(
+            ["osascript", "-e", script, project_name],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        if result.returncode != 0:
+            if "not allowed assistive access" in result.stderr.lower() or "-1719" in result.stderr:
+                raise RuntimeError(
+                    "O Claude foi aberto, mas preciso de permissão de Acessibilidade para clicar no projeto."
+                )
+            raise RuntimeError(result.stderr.strip() or "Não consegui controlar o Claude.")
+        if result.stdout.strip() != "opened":
+            return f"Abri o Claude, mas não encontrei o projeto {project_name} na tela atual."
+        return f"Abrindo o projeto {project_name} no aplicativo Claude."
+
     def search_web(self, query: str) -> str:
         url = f"https://www.google.com/search?q={quote_plus(query)}"
         result = subprocess.run(["open", url], capture_output=True, text=True, timeout=10)
